@@ -1,0 +1,119 @@
+###############################################################################
+#                                                                             #
+# IPFire.org - A linux based firewall                                         #
+# Copyright (C) 2007  Michael Tremer & Christian Schmidt                      #
+#                                                                             #
+# This program is free software: you can redistribute it and/or modify        #
+# it under the terms of the GNU General Public License as published by        #
+# the Free Software Foundation, either version 3 of the License, or           #
+# (at your option) any later version.                                         #
+#                                                                             #
+# This program is distributed in the hope that it will be useful,             #
+# but WITHOUT ANY WARRANTY; without even the implied warranty of              #
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               #
+# GNU General Public License for more details.                                #
+#                                                                             #
+# You should have received a copy of the GNU General Public License           #
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.       #
+#                                                                             #
+###############################################################################
+
+###############################################################################
+# Definitions
+###############################################################################
+
+include Config
+
+VER        = 10.4.7
+
+THISAPP    = mariadb-$(VER)
+DL_FILE    = $(THISAPP).tar.gz
+DL_FROM    = http://ftp.osuosl.org/pub/mariadb/$(THISAPP)/source
+DIR_APP    = $(DIR_SRC)/$(THISAPP)
+TARGET     = $(DIR_INFO)/$(THISAPP)
+PROG       = mariadb
+PAK_VER    = 1
+
+CFLAGS    += -fno-strict-aliasing
+CXXFLAGS  += -std=gnu++98
+
+###############################################################################
+# Top-level Rules
+###############################################################################
+
+objects = $(DL_FILE)
+
+$(DL_FILE) = $(DL_FROM)/$(DL_FILE)
+
+$(DL_FILE)_MD5 = a9a57d2861b981f67ecde0b177be9d69
+
+install : $(TARGET)
+
+check : $(patsubst %,$(DIR_CHK)/%,$(objects))
+
+download :$(patsubst %,$(DIR_DL)/%,$(objects))
+
+md5 : $(subst %,%_MD5,$(objects))
+
+dist: 
+	@$(PAK)
+
+###############################################################################
+# Downloading, checking, md5sum
+###############################################################################
+
+$(patsubst %,$(DIR_CHK)/%,$(objects)) :
+	@$(CHECK)
+
+$(patsubst %,$(DIR_DL)/%,$(objects)) :
+	@$(LOAD)
+
+$(subst %,%_MD5,$(objects)) :
+	@$(MD5)
+
+###############################################################################
+# Installation Details
+###############################################################################
+
+$(TARGET) : $(patsubst %,$(DIR_DL)/%,$(objects))
+	@$(PREBUILD)
+	@rm -rf $(DIR_APP) && cd $(DIR_SRC) && tar zxf $(DIR_DL)/$(DL_FILE)
+	cd $(DIR_APP) && sed -i "s@data/test@\$${INSTALL_MYSQLTESTDIR}@g" sql/CMakeLists.txt
+	cd $(DIR_APP) && mkdir build
+	cd $(DIR_APP)/build && cmake 	-DCMAKE_BUILD_TYPE=Release                      \
+									-DCMAKE_INSTALL_PREFIX=/usr                     \
+									-DINSTALL_DOCDIR=share/doc/mariadb-10.4.7       \
+									-DINSTALL_DOCREADMEDIR=share/doc/mariadb-10.4.7 \
+									-DINSTALL_MANDIR=share/man                      \
+									-DINSTALL_MYSQLSHAREDIR=share/mysql             \
+									-DINSTALL_MYSQLTESTDIR=share/mysql/test         \
+									-DINSTALL_PLUGINDIR=lib/mysql/plugin            \
+									-DINSTALL_SBINDIR=sbin                          \
+									-DINSTALL_SCRIPTDIR=bin                         \
+									-DINSTALL_SQLBENCHDIR=share/mysql/bench         \
+									-DINSTALL_SUPPORTFILESDIR=share/mysql           \
+									-DMYSQL_DATADIR=/var/lib/mysql                  \
+									-DMYSQL_UNIX_ADDR=/run/mysqld/mysqld.sock       \
+									-DWITH_EXTRA_CHARSETS=complex                   \
+									-DWITH_EMBEDDED_SERVER=ON                       \
+									-DSKIP_TESTS=ON                                 \
+									-DTOKUDB_OK=0                                   \
+									..
+	cd $(DIR_APP)/build && make $(MAKETUNING)
+	cd $(DIR_APP)/build && make install
+	rm -rf /tmp/mysql
+	mkdir -p /etc/mysql/my.cnf
+	install -v -m644 $(DIR_SRC)/config/mariadb/my.cnf /etc/mysql/my.cnf
+	[ `fgrep mysql /etc/group |wc -l` -eq 1 ] || groupadd -g 41 mysql
+	[ `fgrep mysql /etc/passwd |wc -l` -eq 1 ] || useradd -c "MySQL Server" -d /srv/mysql -g mysql -s /bin/false -u 41 mysql
+	mkdir -p /var/lib/mysql
+	chown mysql.mysql /var/lib/mysql/
+	install -v -m755 -o mysql -g mysql -d /var/run/mysql
+	install -v -m 644 $(DIR_SRC)/config/backup/includes/mariadb \
+		/var/ipfire/backup/addons/includes/mariadb
+
+	#install initscripts
+	$(call INSTALL_INITSCRIPT,mariadb)
+
+	@rm -rf $(DIR_APP)
+	@$(POSTBUILD)

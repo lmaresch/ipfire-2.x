@@ -1628,6 +1628,7 @@ buildipfire() {
   lfsmake2 firmware-update
   lfsmake2 tshark
   lfsmake2 geoip-generator
+  lfsmake2 mariadb
 }
 
 buildinstaller() {
