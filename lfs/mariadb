@@ -102,13 +102,8 @@ $(TARGET) : $(patsubst %,$(DIR_DL)/%,$(objects))
 	cd $(DIR_APP)/build && make $(MAKETUNING)
 	cd $(DIR_APP)/build && make install
 	rm -rf /tmp/mysql
-	mkdir -p /etc/mysql/my.cnf
+	mkdir -p /etc/mysql
 	install -v -m644 $(DIR_SRC)/config/mariadb/my.cnf /etc/mysql/my.cnf
-	[ `fgrep mysql /etc/group |wc -l` -eq 1 ] || groupadd -g 41 mysql
-	[ `fgrep mysql /etc/passwd |wc -l` -eq 1 ] || useradd -c "MySQL Server" -d /srv/mysql -g mysql -s /bin/false -u 41 mysql
-	mkdir -p /var/lib/mysql
-	chown mysql.mysql /var/lib/mysql/
-	install -v -m755 -o mysql -g mysql -d /var/run/mysql
 	install -v -m 644 $(DIR_SRC)/config/backup/includes/mariadb \
 		/var/ipfire/backup/addons/includes/mariadb
 

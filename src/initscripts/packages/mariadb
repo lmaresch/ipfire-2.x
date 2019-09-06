@@ -28,7 +28,7 @@
 #$LastChangedBy: dj $
 #$Date: 2019-08-10 12:07:59 -0500 (Sat, 10 Aug 2019) $
 
-PIDFILE=/srv/mysql/`/bin/hostname`.pid
+PIDFILE=/run/mysql/`/bin/hostname`.pid
 
 case "$1" in
    start)
