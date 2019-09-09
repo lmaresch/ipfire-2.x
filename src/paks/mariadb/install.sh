@@ -23,7 +23,7 @@
 #
 . /opt/pakfire/lib/functions.sh
 
-MARIADB_ETC = /etc/mariadb
+MARIADB_ETC = /etc/mysql
 MARIADB_MYCNF = ${MARIADB_ETC}/my.cnf
 MARIADB_RUN_DIR = /run/mysql
 MARIADB_GROUP = mysql
@@ -116,7 +116,7 @@ if [[ ! -d ${MARIADB_DATA_DIR} ]]; then
     sharedscripts
     missingok
     postrotate
-    if [ -f /var/run/mysql/mysql.pid ]; then
+    if [ -f /run/mysql/mysql.pid ]; then
       /usr/bin/mysqladmin flush-logs
     fi
     endscript
